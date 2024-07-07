@@ -23,6 +23,9 @@ def create_app(config_name):
     jwt.init_app(app)
 
     # migrate = Migrate(app, db)
+    @app.route("/", methods=['GET'])
+    def home():
+        return "<h1> Home Page </h1>"
 
     @app.before_request
     def create_tables():
