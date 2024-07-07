@@ -6,7 +6,6 @@ from flask_jwt_extended import create_access_token, jwt_required
 from app.main import db
 from app.models import UserModel, OrgModel
 from app.schema import UserRegSchema, UserLoginSchema
-from flask import jsonify
 
 blp = Blueprint("Users", __name__, description="Operations on users")
 
@@ -19,7 +18,7 @@ class UserRegister(MethodView):
             return {"status": "Bad request",
                     "message": "Registration unsuccessful",
                     'statusCode': 400
-                    }
+                    }, 400
 
         user = UserModel(
             firstName=user_data["firstName"],
@@ -47,9 +46,9 @@ class UserRegister(MethodView):
                 }
                 }, 201
 
-    def get(self):
-        users = UserModel.query.all()
-        return jsonify([user.to_dict() for user in users])
+    # def get(self):
+    #     users = UserModel.query.all()
+    #     return jsonify([user.to_dict() for user in users])
 
 
 @blp.route("/auth/login")
@@ -72,7 +71,7 @@ class UserLogin(MethodView):
         return {"status": "Bad request",
                 "message": "Authentication failed",
                 "statusCode": 401
-                }
+                }, 401
 
 
 @blp.route("/api/users/<string:id>")

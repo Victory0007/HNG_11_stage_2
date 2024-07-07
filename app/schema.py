@@ -18,4 +18,4 @@ class UserLoginSchema(Schema):
 class OrgSchema(Schema):
     orgId = fields.Str(dump_only=True)
     name = fields.Str(required=True)
-    description = fields.Str()
+    description = fields.Str(required=True)

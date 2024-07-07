@@ -26,6 +26,11 @@ class Organisations(MethodView):
     @blp.arguments(OrgSchema)
     @jwt_required()
     def post(self, org_data):
+        if OrgModel.query.filter(OrgModel.name == org_data["name"]).first():
+            return {"status": "Bad request",
+                    "message": "Client error",
+                    'statusCode': 400
+                    }, 400
         org = OrgModel(name=org_data['name'], description=org_data.get('description', ''))
         db.session.add(org)
         db.session.commit()
