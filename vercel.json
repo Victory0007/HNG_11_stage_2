@@ -1,18 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "manage.py",
-      "use": "@vercel/python",
-      "config": {
-        "postInstallCommand": "apt-get update && apt-get install -y postgresql libpq-dev"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "manage.py"
-    }
+    "version": 2,
+    "builds": [
+      {"src":  "stage1.py", "use": "@vercel/python"}
+    ],
+    "routes": [
+      {"src": "/(.*)", "dest":  "stage1.py"}
   ]
 }
