@@ -1,9 +1,9 @@
 {
     "version": 2,
     "builds": [
-      {"src":  "stage1.py", "use": "@vercel/python"}
+      {"src":  "manage.py", "use": "@vercel/python"}
     ],
     "routes": [
-      {"src": "/(.*)", "dest":  "stage1.py"}
+      {"src": "/(.*)", "dest":  "manage.py"}
   ]
 }
