@@ -60,6 +60,12 @@ class AddUserToOrganisation(MethodView):
         user_id = get_jwt_identity()
         org = OrgModel.query.filter_by(orgId=orgId).first_or_404(description="Organisation not found")
         user = UserModel.query.filter_by(userId=user_id).first_or_404(description="User not found")
+        # Check if the user is already in the organization
+        if user in org.users:
+            return {
+                "status": "error",
+                "message": "User is already a member of the organisation"
+            }, 400
         org.users.append(user)
         db.session.commit()
         return {
