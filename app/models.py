@@ -23,7 +23,7 @@ class UserModel(db.Model):
     password = db.Column(db.String(255), nullable=False)
     phone = db.Column(db.String(20))
 
-    organizations = relationship('OrgModel', secondary=user_organization, back_populates="users")
+    organizations = relationship('OrgModel', secondary='user_organization', back_populates="users")
 
     def __init__(self, firstName, lastName, email, password, phone=None):
         self.firstName = firstName
@@ -41,6 +41,67 @@ class UserModel(db.Model):
             'phone': self.phone,
         }
 
+    def validate_user(self):
+        """User Validation"""
+        errors = []
+        if not isinstance(self.firstName, str):
+            errors.append({
+                'field': "firstName",
+                'message': "First Name must be a string"
+            })
+        if not isinstance(self.lastName, str):
+            errors.append({
+                'field': "lastName",
+                'message': "Last Name must be a string"
+            })
+        if not isinstance(self.email, str):
+            errors.append({
+                'field': "email",
+                'message': "Email must be a string"
+            })
+        if not isinstance(self.password, str):
+            errors.append({
+                'field': "password",
+                'message': "Password must be a string"
+            })
+        if self.phone and not isinstance(self.phone, str):
+            errors.append({
+                'field': "phone",
+                'message': "Phone must be a string"
+            })
+        if not self.firstName:
+            errors.append({
+                "field": "firstName",
+                "message": "First Name must not be null"
+            })
+        if not self.lastName:
+            errors.append({
+                "field": "lastName",
+                "message": "Last Name must not be null"
+            })
+        if not self.email:
+            errors.append({
+                "field": "email",
+                "message": 'Email field must not be null'
+            })
+        if self.email and '@' not in self.email:
+            errors.append({
+                "field": "email",
+                "message": "Invalid email"
+            })
+        if not self.password:
+            errors.append({
+                "field": "password",
+                "message": "Password field cannot be null"
+            })
+        if self.email:
+            user = UserModel.query.filter_by(email=self.email).first()
+            if user:
+                errors.append({
+                    "field": "email",
+                    "message": "User already exists with this email address"
+                })
+        return errors
 
 class OrgModel(db.Model):
     __tablename__ = "organizations"

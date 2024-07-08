@@ -2,53 +2,76 @@ from flask.views import MethodView
 from flask_smorest import Blueprint
 from passlib.hash import pbkdf2_sha256
 from flask_jwt_extended import create_access_token, jwt_required
+from flask import request, jsonify
 
 from app.main import db
 from app.models import UserModel, OrgModel
-from app.schema import UserRegSchema, UserLoginSchema
+from app.schema import UserLoginSchema
 
 blp = Blueprint("Users", __name__, description="Operations on users")
 
 
 @blp.route("/auth/register")
 class UserRegister(MethodView):
-    @blp.arguments(UserRegSchema)
-    def post(self, user_data):
-        if UserModel.query.filter(UserModel.email == user_data["email"]).first():
-            return {"status": "Bad request",
-                    "message": "Registration unsuccessful",
-                    'statusCode': 400
-                    }, 400
-
+    def post(self):
+        req = request.json
         user = UserModel(
-            firstName=user_data["firstName"],
-            lastName=user_data["lastName"],
-            email=user_data["email"],
-            password=pbkdf2_sha256.hash(user_data["password"]),
-            phone=user_data["phone"]
+            email=req.get("email"),
+            firstName=req.get("firstName"),
+            lastName=req.get("lastName"),
+            password=req.get("password"),
+            phone=req.get("phone")
         )
-        db.session.add(user)
-        db.session.commit()
+        errors = user.validate_user()
+        if errors:
+            response = {
+                "errors": errors
+            }
+            return jsonify(response), 422
 
-        org = OrgModel(
-            name=user_data["firstName"] + "'s Organization",
-            description=f"This organization was created by {user_data["firstName"]}"
-        )
-        org.users.append(user)
-        db.session.add(org)
-        db.session.commit()
+        # Ensure password is a string before hashing
+        if not isinstance(user.password, str):
+            errors.append({
+                "field": "password",
+                "message": "Password must be a string"
+            })
+            response = {
+                "errors": errors
+            }
+            return jsonify(response), 422
 
-        return {"status": "success",
+        user.password = pbkdf2_sha256.hash(user.password)
+
+        try:
+            # Creating an organisation
+            org = OrgModel(name=f"{user.firstName}'s Organisation")
+            db.session.add(org)
+            # Add the created organisation to the list of organisations that belong to this user
+            user.organizations.append(org)
+
+            db.session.add(user)
+            db.session.commit()  # save to database
+
+            access_token = create_access_token(identity=user.userId)
+
+            response = {
+                "status": "success",
                 "message": "Registration successful",
                 "data": {
-                    "accessToken": create_access_token(identity=user.userId),
+                    "accessToken": access_token,
                     "user": user.to_dict()
                 }
-                }, 201
+            }
 
-    # def get(self):
-    #     users = UserModel.query.all()
-    #     return jsonify([user.to_dict() for user in users])
+            return jsonify(response), 201
+        except Exception as e:
+            response = {
+                "status": "Bad request",
+                "message": "Registration unsuccessful",
+                "statusCode": 400
+            }
+            print(e)
+            return jsonify(response), 400
 
 
 @blp.route("/auth/login")
@@ -59,19 +82,20 @@ class UserLogin(MethodView):
 
         if user and pbkdf2_sha256.verify(user_data["password"], user.password):
             access_token = create_access_token(identity=user.userId)
-            return {"status": "success",
-                    "message": "Login successful",
-                    "data": {
-                        "access_token": access_token,
-                        "user": user.to_dict()
-                    }
+            return {
+                "status": "success",
+                "message": "Login successful",
+                "data": {
+                    "access_token": access_token,
+                    "user": user.to_dict()
+                }
+            }, 200
 
-                    }, 200
-
-        return {"status": "Bad request",
-                "message": "Authentication failed",
-                "statusCode": 401
-                }, 401
+        return {
+            "status": "Bad request",
+            "message": "Authentication failed",
+            "statusCode": 401
+        }, 401
 
 
 @blp.route("/api/users/<string:id>")
